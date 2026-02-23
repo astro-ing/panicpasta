@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --color-pasta-50: #fffdfa;
+  --color-pasta-100: #fcf8ec;
+  --color-pasta-200: #f5eed3;
+  --color-tomato-400: #ff6b5b;
+  --color-tomato-500: #ff4733;
+  --color-tomato-600: #e63926;
+  --color-charcoal-800: #2d2a26;
+  --color-charcoal-900: #1a1816;
+  --color-basil-400: #3a965f;
+  --color-basil-500: #2b7a4b;
+
+  --color-background: var(--color-pasta-50);
+  --color-foreground: var(--color-charcoal-900);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 700;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom utility for the jagged/organic borders often used in editorial food sites */
+@layer utilities {
+  .border-organic {
+    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  }
 }
