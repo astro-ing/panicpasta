@@ -16,6 +16,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "PANIC Pasta | One plan that keeps everyone happy",
   description: "Household-aware meal planning with per-person forks. Stop making two dinners.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://panicpasta.com"),
 };
 
 export default function RootLayout({

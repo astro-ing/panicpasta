@@ -11,7 +11,7 @@ export default function Home() {
           <h2 className="font-serif font-black text-3xl mb-4 text-charcoal-900">PANIC Pasta</h2>
           <p className="font-medium mb-8">Stop making two dinners.</p>
           <div className="text-sm font-bold opacity-60">
-            © 2026 PANIC Pasta SaaS.
+            © 2026 PANIC Pasta · panicpasta.com
           </div>
         </div>
       </footer>
