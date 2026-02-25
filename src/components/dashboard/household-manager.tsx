@@ -55,13 +55,11 @@ export function HouseholdManager({ members: initialMembers, maxMembers }: Props)
     dislikes: [] as string[],
     goals: [] as string[],
   })
-  const [allergyInput, setAllergyInput] = useState("")
   const [dislikeInput, setDislikeInput] = useState("")
   const [goalInput, setGoalInput] = useState("")
 
   const resetForm = () => {
     setForm({ name: "", ageGroup: "adult", diet: "none", allergies: [], dislikes: [], goals: [] })
-    setAllergyInput("")
     setDislikeInput("")
     setGoalInput("")
   }
@@ -180,7 +178,7 @@ export function HouseholdManager({ members: initialMembers, maxMembers }: Props)
       {/* Allergies */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-charcoal-800 mb-1 block">Allergies</label>
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap gap-2">
           {COMMON_ALLERGIES.map((a) => (
             <button
               key={a}
@@ -194,13 +192,6 @@ export function HouseholdManager({ members: initialMembers, maxMembers }: Props)
             </button>
           ))}
         </div>
-        <input
-          value={allergyInput}
-          onChange={(e) => setAllergyInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addChip("allergies", allergyInput); setAllergyInput("") } }}
-          placeholder="Add custom allergy..."
-          className="w-full h-9 px-3 rounded-lg border-2 border-charcoal-900/30 bg-pasta-50 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-tomato-500"
-        />
       </div>
 
       {/* Dislikes */}

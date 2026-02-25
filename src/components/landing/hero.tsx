@@ -44,9 +44,10 @@ export function Hero({ ctaHref, isLoggedIn }: HeroProps) {
           </span>
         </h1>
         
-        <p className="text-xl md:text-2xl text-charcoal-800 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-          The household-aware meal planner that automatically generates 
-          <span className="font-bold text-basil-600 bg-basil-400/20 px-2 py-0.5 mx-1.5 rounded-md border-2 border-basil-400/30 inline-block transform rotate-1">personal forks</span> 
+        <p className="text-xl md:text-2xl text-charcoal-800 mb-12 max-w-2xl lg:max-w-3xl mx-auto font-medium leading-relaxed text-balance">
+          The household-aware meal planner that automatically generates{" "}
+          <span className="font-bold text-basil-600 bg-basil-400/20 px-2 py-0.5 mx-1.5 rounded-md border-2 border-basil-400/30 inline-block transform rotate-1">personal forks</span>
+          <br className="hidden lg:block" />
           for allergies, diets, and picky eaters.
         </p>
         

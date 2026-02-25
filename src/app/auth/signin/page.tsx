@@ -80,7 +80,13 @@ export default function SignInPage() {
             <div className="text-center p-4 bg-basil-400/10 rounded-xl border-2 border-basil-400">
               <Mail className="w-8 h-8 text-basil-500 mx-auto mb-2" />
               <p className="font-bold text-basil-600">Check your email!</p>
-              <p className="text-sm text-charcoal-800 mt-1">We sent a magic link to <strong>{email}</strong></p>
+              <p className="text-sm text-charcoal-800 mt-1">
+                We sent a magic link to
+                <strong className="block mt-1 break-all">{email}</strong>
+              </p>
+              <p className="text-xs text-charcoal-800/70 mt-2">
+                If you do not see it in a minute, check your spam or junk folder.
+              </p>
             </div>
           ) : (
             <form onSubmit={handleEmailSignIn} className="space-y-4">

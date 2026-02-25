@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { EmailShoppingListButton } from "@/components/dashboard/email-shopping-list-button"
+import { PlanNutritionNotice } from "@/components/dashboard/plan-nutrition-notice"
 import { aggregateShoppingList } from "@/lib/shopping-list"
 
 export default async function ShoppingListPage({ params }: { params: Promise<{ id: string }> }) {
@@ -71,6 +72,8 @@ export default async function ShoppingListPage({ params }: { params: Promise<{ i
           </div>
         ))
       )}
+
+      <PlanNutritionNotice />
     </div>
   )
 }

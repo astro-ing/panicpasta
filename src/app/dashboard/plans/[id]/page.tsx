@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PlanNutritionNotice } from "@/components/dashboard/plan-nutrition-notice"
 import { ShoppingCart, ArrowLeft, Clock, Users } from "lucide-react"
 import type { Meal, Fork } from "@/lib/schemas"
 
@@ -168,6 +169,8 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
           </div>
         )
       })}
+
+      <PlanNutritionNotice />
     </div>
   )
 }
