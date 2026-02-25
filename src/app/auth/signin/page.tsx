@@ -10,11 +10,33 @@ const GOOGLE_OAUTH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH === "tr
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [emailSent, setEmailSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState("")
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    await signIn("nodemailer", { email, callbackUrl: "/dashboard" })
-    setEmailSent(true)
+
+    setSending(true)
+    setError("")
+
+    try {
+      const result = await signIn("nodemailer", {
+        email,
+        redirect: false,
+        redirectTo: "/dashboard",
+      })
+
+      if (!result?.ok) {
+        setError("We could not send your magic link. Please try again.")
+        return
+      }
+
+      setEmailSent(true)
+    } catch {
+      setError("Something went wrong while sending your magic link.")
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -62,6 +84,11 @@ export default function SignInPage() {
             </div>
           ) : (
             <form onSubmit={handleEmailSignIn} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-tomato-500/10 border-2 border-tomato-500 rounded-xl">
+                  <p className="text-sm font-bold text-tomato-600">{error}</p>
+                </div>
+              )}
               <input
                 type="email"
                 placeholder="your@email.com"
@@ -70,9 +97,9 @@ export default function SignInPage() {
                 required
                 className="w-full h-12 px-4 rounded-xl border-2 border-charcoal-900 bg-pasta-50 font-medium placeholder:text-charcoal-800/40 focus:outline-none focus:ring-2 focus:ring-tomato-500 focus:border-tomato-500"
               />
-              <Button type="submit" size="lg" className="w-full text-lg">
+              <Button type="submit" size="lg" className="w-full text-lg" disabled={sending}>
                 <Mail className="w-5 h-5 mr-2" />
-                Send Magic Link
+                {sending ? "Sending..." : "Send Magic Link"}
               </Button>
             </form>
           )}
