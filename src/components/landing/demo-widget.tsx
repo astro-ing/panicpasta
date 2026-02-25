@@ -35,7 +35,7 @@ export function DemoWidget() {
           onClick={() => setGenerated(true)}
           className={`w-full md:w-auto transition-all duration-300 ${generated ? 'bg-basil-500 text-white shadow-none translate-y-1' : ''}`}
         >
-          {generated ? "Plan Generated!" : "Generate Day"}
+          {generated ? "Plan Generated!" : "Generate a Meal"}
         </Button>
       </div>
 
