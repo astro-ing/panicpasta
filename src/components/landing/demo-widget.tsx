@@ -105,7 +105,7 @@ export function DemoWidget() {
                     </div>
                     <div>
                       <p className="font-bold text-sm">Kid</p>
-                      <p className="text-xs font-medium text-charcoal-800">Serve pasta plain with butter, chicken and spinach separated on plate.</p>
+                      <p className="text-xs font-medium text-charcoal-800">Serve pasta plain with chicken and spinach separated on plate.</p>
                     </div>
                   </div>
 
