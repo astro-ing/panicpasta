@@ -23,12 +23,12 @@ export function Features() {
   ];
 
   return (
-    <section className="py-32 bg-pasta-100 border-y-4 border-charcoal-900 relative">
+    <section id="features" className="py-32 bg-pasta-100 border-y-4 border-charcoal-900 relative scroll-mt-28">
       <div className="container mx-auto px-4 max-w-6xl relative z-10">
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">Why PANIC Pasta?</h2>
           <p className="text-xl md:text-2xl text-charcoal-800 max-w-2xl mx-auto font-medium">
-            Because meal planning for multiple people is a logic puzzle you shouldn't have to solve every Sunday.
+              Because meal planning for multiple people is a logic puzzle you shouldn&apos;t have to solve every Sunday.
           </p>
         </div>
 

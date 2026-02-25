@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { memberCreateSchema } from "@/lib/schemas"
 
-const MEMBERS_MAX_FREE = Number(process.env.MEMBERS_MAX_FREE || 3)
+const MEMBERS_MAX_FREE = Number(process.env.MEMBERS_MAX_FREE || 2)
 const MEMBERS_MAX_PRO = Number(process.env.MEMBERS_MAX_PRO || 6)
 
 export async function GET() {

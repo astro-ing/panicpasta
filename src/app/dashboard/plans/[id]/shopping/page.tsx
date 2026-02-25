@@ -4,15 +4,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download } from "lucide-react"
-import type { Meal } from "@/lib/schemas"
-
-interface AggregatedItem {
-  name: string
-  quantities: string[]
-  category: string
-}
+import { ArrowLeft } from "lucide-react"
+import { EmailShoppingListButton } from "@/components/dashboard/email-shopping-list-button"
+import { aggregateShoppingList } from "@/lib/shopping-list"
 
 export default async function ShoppingListPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -31,31 +25,7 @@ export default async function ShoppingListPage({ params }: { params: Promise<{ i
   })
   if (!plan) notFound()
 
-  const itemMap = new Map<string, AggregatedItem>()
-  for (const day of plan.planDays) {
-    const meals = day.meals as Record<string, Meal | null>
-    for (const meal of Object.values(meals)) {
-      if (!meal?.shopping_items) continue
-      for (const item of meal.shopping_items) {
-        const key = item.name.toLowerCase()
-        const existing = itemMap.get(key)
-        if (existing) {
-          existing.quantities.push(item.qty)
-        } else {
-          itemMap.set(key, { name: item.name, quantities: [item.qty], category: item.category })
-        }
-      }
-    }
-  }
-
-  const grouped: Record<string, AggregatedItem[]> = {}
-  for (const item of itemMap.values()) {
-    if (!grouped[item.category]) grouped[item.category] = []
-    grouped[item.category].push(item)
-  }
-  for (const cat of Object.keys(grouped)) {
-    grouped[cat].sort((a, b) => a.name.localeCompare(b.name))
-  }
+  const { grouped, totalItems } = aggregateShoppingList(plan.planDays)
 
   const categoryColors: Record<string, string> = {
     produce: "bg-basil-400 text-white",
@@ -67,12 +37,15 @@ export default async function ShoppingListPage({ params }: { params: Promise<{ i
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      <div>
-        <Link href={`/dashboard/plans/${id}`} className="text-sm font-bold text-charcoal-800 hover:text-tomato-500 flex items-center gap-1 mb-2">
-          <ArrowLeft className="w-4 h-4" /> Back to plan
-        </Link>
-        <h1 className="font-serif text-4xl font-black mb-1">Shopping List</h1>
-        <p className="text-charcoal-800 font-medium">{plan.numDays}-day plan · {itemMap.size} items</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <Link href={`/dashboard/plans/${id}`} className="text-sm font-bold text-charcoal-800 hover:text-tomato-500 flex items-center gap-1 mb-2">
+            <ArrowLeft className="w-4 h-4" /> Back to plan
+          </Link>
+          <h1 className="font-serif text-4xl font-black mb-1">Shopping List</h1>
+          <p className="text-charcoal-800 font-medium">{plan.numDays}-day plan · {totalItems} items</p>
+        </div>
+        <EmailShoppingListButton planId={id} />
       </div>
 
       {Object.keys(grouped).length === 0 ? (

@@ -1,49 +1,67 @@
-# 🍝 PANIC Pasta
+# PANIC Pasta
 
-**One plan that keeps everyone happy.**
+One plan that keeps everyone happy.
 
-PANIC Pasta is a household-aware meal planner that generates shared meal plans with automatic per-person "forks" — dietary modifications for allergies, diets, and picky eaters — so your household eats together without anyone cooking two dinners.
+PANIC Pasta is a household-aware meal planner that generates shared meal plans with per-person forks (dietary modifications) so households can eat together without cooking separate dinners.
 
-**Live:** [panicpasta.com](https://panicpasta.com)
+Live: https://panicpasta.com
 
 ---
 
 ## Features
 
-- **Household profiles** — Define 1–6 members with age, diet, allergies, dislikes, and goals
-- **One-click plan generation** — Constraint engine + LLM produces multi-day meal plans
-- **Personal forks** — Automatic per-person swaps (e.g. dairy-free, extra protein) only when needed
-- **Shopping lists** — Aggregated by category (produce, pantry, protein)
-- **Pantry mode** (Pro) — "Use-it-up" prioritizes ingredients you already have
-- **Tier system** — Free (3 members, 1 gen/day, 3-day plans) · Pro (6 members, 3 gen/day, 30-day plans)
+- Household profiles with member diets, allergies, dislikes, and goals
+- Multi-day meal plan generation with selectable meal slots
+- Deterministic constraint layer + LLM output validation
+- Personal forks only where needed (no unnecessary variants)
+- Shopping lists grouped by category, with email-to-account support
+- Account settings for units (metric/imperial), newsletter, and billing state
+- Stripe-powered Pro upgrade and cancel-at-period-end flow
+- Env-driven tier limits (defaults: Free 2 members, Pro 6 members)
 
 ## Tech Stack
 
 | Layer | Choice |
-|-------|--------|
+| --- | --- |
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
-| Auth | Auth.js v5 + Prisma adapter (Google OAuth, magic link) |
-| Database | Supabase-hosted Postgres via Prisma 6 |
+| Auth | Auth.js v5 + Prisma adapter |
+| Database | Supabase Postgres + Prisma 6 |
 | Validation | Zod |
-| LLM | OpenAI API (gpt-4o-mini) |
-| Billing | Stripe (subscriptions + webhooks) |
+| LLM | OpenAI API (env-configurable, `gpt-5-mini` in committed stage envs) |
+| Billing | Stripe subscriptions + webhooks |
 | Styling | Tailwind CSS v4 + Framer Motion |
-| Deployment | Vercel |
+| Deploy | Vercel |
+
+## Useful Commands
+
+```bash
+npm run dev          # start dev server
+npm run build        # production build
+npm run start        # run production build
+npm run lint         # run eslint
+
+npm run db:generate  # prisma client generate (dev env)
+npm run db:migrate   # prisma migrate dev (dev env)
+npm run db:push      # prisma db push (dev env)
+npm run db:studio    # prisma studio (dev env)
+```
 
 ## Prerequisites
 
-- **Node.js** ≥ 18
-- **npm** ≥ 9
-- **Supabase** project (free tier works) — [supabase.com](https://supabase.com)
-- **Google OAuth** credentials — [console.cloud.google.com](https://console.cloud.google.com)
-- **OpenAI API key** — [platform.openai.com](https://platform.openai.com)
-- **Stripe** account (test mode for dev) — [stripe.com](https://stripe.com)
-- Optional: **Resend** account for magic-link email — [resend.com](https://resend.com)
+- Node.js >= 18
+- npm >= 9
+- Supabase project
+- OpenAI API key
+- Stripe account (test mode for local)
+- SMTP provider for magic links and shopping list emails (Resend recommended)
+- Optional: Google OAuth credentials (disabled by default)
 
-## Setup
+---
 
-### 1. Clone & install
+## Local Development Setup
+
+### 1) Install
 
 ```bash
 git clone https://github.com/<your-org>/panic-pasta.git
@@ -51,150 +69,220 @@ cd panic-pasta
 npm install
 ```
 
-### 2. Configure environment
+### 2) Configure env
 
 ```bash
 cp .env.example .env.development.local
 ```
 
-Edit `.env.development.local` with your secrets:
+Fill required values in `.env.development.local`:
 
 ```bash
+# Required
 NEXTAUTH_SECRET=<openssl rand -base64 32>
-DATABASE_URL=postgres://<user>:<pass>@db.<project>.supabase.co:5432/postgres
-GOOGLE_CLIENT_ID=<from Google Cloud Console>
-GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-LLM_API_KEY=sk-<your-openai-key>
-STRIPE_SECRET_KEY=sk_test_<your-key>
-STRIPE_WEBHOOK_SECRET=whsec_<from stripe listen>
-STRIPE_PRO_PRICE_ID=price_test_<your-price-id>
-# Optional (magic link email):
+DATABASE_URL=<supabase pooled connection string>
+DIRECT_URL=<supabase direct connection string>
+LLM_API_KEY=<openai key>
+
+# Required for magic-link sign-in + shopping-list email
 EMAIL_SERVER_HOST=smtp.resend.com
-EMAIL_SERVER_PASSWORD=re_<your-resend-key>
+EMAIL_SERVER_PORT=587
+EMAIL_SERVER_USER=resend
+EMAIL_SERVER_PASSWORD=<resend api key>
+EMAIL_FROM="PANIC Pasta Dev <no-reply@panicpasta.com>"
+
+# Required for billing flows in dev
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-### 3. Set up the database
+Optional Google OAuth (disabled by default):
 
 ```bash
-npx prisma migrate dev --name init
+ENABLE_GOOGLE_OAUTH=true
+NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH=true
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 ```
 
-This creates all tables (User, Household, Member, Plan, PlanDay, PantryItem) in your Supabase Postgres.
+Notes:
+- `DATABASE_URL` should be the pooled URL for runtime.
+- `DIRECT_URL` should be the direct DB URL for Prisma migrations.
+- If your DB password contains special characters, URL-encode it.
 
-### 4. Run development
+### 3) Generate Prisma client and apply migrations
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+If you want quick schema sync during early local iteration:
+
+```bash
+npm run db:push
+```
+
+### 4) Start app
 
 ```bash
 npm run dev
 ```
 
-Opens at **http://localhost:3000**. Dev mode uses relaxed rate limits (see `.env.development`).
+Open http://localhost:3000
 
-To test Stripe webhooks locally:
+### 5) Stripe webhook forwarding (local)
+
+In a second terminal:
 
 ```bash
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
 
-## Production Deployment (Vercel)
+Copy the printed `whsec_...` into `STRIPE_WEBHOOK_SECRET` and restart `npm run dev` if needed.
 
-### 1. Push to GitHub
+---
+
+## Production Setup (Vercel)
+
+### 1) Push repository and import to Vercel
+
+- Push your branch/repo to GitHub
+- Import project in Vercel (`Next.js` auto-detected)
+
+### 2) Set production env vars
+
+Add these in Vercel Project Settings -> Environment Variables:
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_APP_URL` | yes | e.g. `https://panicpasta.com` |
+| `NEXTAUTH_URL` | yes | same as app URL |
+| `NEXTAUTH_SECRET` | yes | generate fresh for production |
+| `DATABASE_URL` | yes | Supabase pooled runtime URL |
+| `DIRECT_URL` | recommended | for migrations/maintenance |
+| `LLM_API_KEY` | yes | OpenAI key |
+| `STRIPE_SECRET_KEY` | yes | `sk_live_...` |
+| `STRIPE_PRO_PRICE_ID` | yes | live price id |
+| `STRIPE_WEBHOOK_SECRET` | yes | webhook signing secret |
+| `EMAIL_SERVER_HOST` | yes | e.g. `smtp.resend.com` |
+| `EMAIL_SERVER_PORT` | yes | e.g. `587` |
+| `EMAIL_SERVER_USER` | yes | SMTP user |
+| `EMAIL_SERVER_PASSWORD` | yes | SMTP password/API key |
+| `EMAIL_FROM` | yes | verified sender |
+| `ENABLE_GOOGLE_OAUTH` | optional | set `true` to enable |
+| `NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH` | optional | set `true` to show button |
+| `GOOGLE_CLIENT_ID` | optional | required if Google enabled |
+| `GOOGLE_CLIENT_SECRET` | optional | required if Google enabled |
+
+Tier and rate-limit settings are configurable via env as well:
+
+- `PLAN_DAILY_LIMIT_FREE`
+- `PLAN_DAILY_LIMIT_PRO`
+- `PLAN_MAX_DAYS_FREE`
+- `PLAN_MAX_DAYS_PRO`
+- `MEMBERS_MAX_FREE`
+- `MEMBERS_MAX_PRO`
+- `RATE_LIMIT_WINDOW_MS`
+- `RATE_LIMIT_MAX_REQUESTS`
+
+### 3) Run production migrations
+
+From a trusted environment with production DB credentials:
 
 ```bash
-git remote add origin https://github.com/<your-org>/panic-pasta.git
-git push -u origin main
+dotenv -e .env.production.local -- npx prisma migrate deploy
 ```
 
-### 2. Import to Vercel
+Or set env inline in your CI/deploy job and run `npx prisma migrate deploy`.
 
-- Import the repo at [vercel.com/new](https://vercel.com/new)
-- Framework: **Next.js** (auto-detected)
+### 4) Configure Stripe production webhook
 
-### 3. Set environment variables
+Create webhook endpoint:
 
-In Vercel → Settings → Environment Variables, add:
+- URL: `https://<your-domain>/api/webhooks/stripe`
+- Events:
+  - `checkout.session.completed`
+  - `customer.subscription.deleted`
+  - `invoice.payment_failed`
 
-| Variable | Value |
-|----------|-------|
-| `NEXTAUTH_SECRET` | `<openssl rand -base64 32>` |
-| `DATABASE_URL` | Production Supabase connection string |
-| `GOOGLE_CLIENT_ID` | Production OAuth app |
-| `GOOGLE_CLIENT_SECRET` | Production OAuth app |
-| `LLM_API_KEY` | OpenAI API key |
-| `STRIPE_SECRET_KEY` | `sk_live_...` |
-| `STRIPE_WEBHOOK_SECRET` | From Stripe dashboard webhook endpoint |
-| `STRIPE_PRO_PRICE_ID` | `price_live_...` |
-| `EMAIL_SERVER_HOST` | `smtp.resend.com` |
-| `EMAIL_SERVER_PASSWORD` | Resend API key |
+Use the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`.
 
-Non-secret values (`NEXT_PUBLIC_APP_URL`, tier limits) are already set in `.env.production`.
+### 5) Smoke test
 
-### 4. Run database migration
+- Magic-link sign-in
+- Plan generation
+- Shopping list email
+- Upgrade to Pro checkout
+- Cancel at period end flow
 
-```bash
-DATABASE_URL=<prod-url> npx prisma migrate deploy
-```
+---
 
-### 5. Configure Stripe webhook
+## Env File Strategy
 
-In Stripe Dashboard → Webhooks → Add endpoint:
-- URL: `https://panicpasta.com/api/webhooks/stripe`
-- Events: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
+This project uses layered env files:
+
+- `.env` (shared defaults)
+- `.env.development` (dev defaults)
+- `.env.production` (prod defaults)
+- `.env.local` (local overrides)
+- `.env.development.local` (dev secrets)
+- `.env.production.local` (prod secrets)
+
+Tier and plan limits are read from environment at runtime, so stage-specific local overrides (for example `.env.development.local`) are honored.
+
+---
 
 ## Project Structure
 
-```
+```text
 src/
-├── app/
-│   ├── page.tsx                    # Landing page
-│   ├── auth/signin/                # Sign-in (Google + magic link)
-│   ├── dashboard/                  # Authenticated app
-│   │   ├── household/              # Member management
-│   │   ├── plans/                  # Plan list, generation, detail
-│   │   │   ├── new/                # Plan generation form
-│   │   │   └── [id]/              # Plan view + shopping list
-│   │   └── pantry/                 # Pantry management (Pro)
-│   └── api/                        # REST API routes
-│       ├── auth/[...nextauth]/     # Auth.js handlers
-│       ├── household/              # Household CRUD
-│       ├── members/                # Member CRUD
-│       ├── plans/                  # Plan list, detail, generate
-│       ├── pantry/                 # Pantry CRUD (Pro)
-│       └── webhooks/stripe/        # Billing webhooks
-├── components/
-│   ├── ui/                         # Button, Badge (CVA + Radix)
-│   ├── landing/                    # Hero, Features, DemoWidget
-│   └── dashboard/                  # HouseholdManager, SignOutButton
-└── lib/
-    ├── auth.ts                     # Auth.js v5 config
-    ├── prisma.ts                   # Prisma client singleton
-    ├── constraints.ts              # Deterministic diet constraint engine
-    ├── llm.ts                      # OpenAI meal plan generation
-    ├── schemas.ts                  # Zod schemas (API + LLM output)
-    └── env.ts                      # Zod env validation
-```
-
-## Architecture
-
-```
-User signs in → Household auto-created → Add members with preferences
-                                                    ↓
-                              POST /api/plans/generate
-                                        ↓
-                        ┌───────────────────────────────┐
-                        │  1. Constraint Engine          │
-                        │     • Merge allergies          │
-                        │     • Compute base diet        │
-                        │     • Identify fork groups     │
-                        ├───────────────────────────────┤
-                        │  2. Single LLM Call            │
-                        │     • Structured JSON output   │
-                        │     • Zod validation           │
-                        ├───────────────────────────────┤
-                        │  3. Persist Plan + PlanDays    │
-                        └───────────────────────────────┘
-                                        ↓
-                        View plan → Meal cards + Fork chips
-                        Shopping list → Grouped by category
+  app/
+    page.tsx                          # marketing homepage
+    auth/
+      signin/page.tsx                 # magic-link sign-in (Google optional)
+      error/page.tsx
+    dashboard/
+      page.tsx                        # overview
+      account/page.tsx                # account + billing + prefs
+      household/page.tsx              # member management
+      pantry/page.tsx                 # pantry (Pro-gated)
+      plans/
+        page.tsx
+        new/page.tsx                  # plan generation form
+        [id]/page.tsx
+        [id]/shopping/page.tsx
+    api/
+      account/route.ts
+      auth/[...nextauth]/route.ts
+      billing/
+        checkout/route.ts
+        subscription/route.ts
+        cancel/route.ts
+      household/route.ts
+      members/route.ts
+      members/[id]/route.ts
+      plans/
+        route.ts
+        generate/route.ts
+        [id]/route.ts
+        [id]/shopping-list/route.ts
+        [id]/shopping-list/email/route.ts
+      pantry/route.ts
+      pantry/[id]/route.ts
+      webhooks/stripe/route.ts
+  components/
+    landing/
+    dashboard/
+    ui/
+  lib/
+    auth.ts
+    prisma.ts
+    constraints.ts
+    llm.ts
+    schemas.ts
+    env.ts
 ```
 
 ## License

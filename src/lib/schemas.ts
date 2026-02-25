@@ -6,6 +6,8 @@ export const DietTypeEnum = z.enum([
 
 export const AgeGroupEnum = z.enum(["adult", "teen", "child"])
 
+export const MeasurementSystemEnum = z.enum(["metric", "imperial"])
+
 export const memberCreateSchema = z.object({
   name: z.string().min(1).max(50),
   ageGroup: AgeGroupEnum.default("adult"),
@@ -21,6 +23,18 @@ export const householdUpdateSchema = z.object({
   name: z.string().min(1).max(100),
 })
 
+export const accountUpdateSchema = z
+  .object({
+    measurementSystem: MeasurementSystemEnum.optional(),
+    newsletterSubscribed: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.measurementSystem !== undefined ||
+      data.newsletterSubscribed !== undefined,
+    { message: "At least one account setting must be provided." }
+  )
+
 export const mealSlotSchema = z.object({
   enabled: z.boolean(),
   label: z.string(),
@@ -30,6 +44,7 @@ export const mealSlotSchema = z.object({
 export const generatePlanSchema = z.object({
   startDate: z.string().refine((d) => !isNaN(Date.parse(d)), "Invalid date"),
   numDays: z.number().int().min(1).max(31),
+  timezone: z.string().max(100).optional(),
   mealsEnabled: z.record(z.string(), mealSlotSchema).default({
     meal_1: { enabled: true, label: "Breakfast", type: "breakfast" },
     meal_2: { enabled: true, label: "Lunch", type: "meal" },
@@ -85,9 +100,11 @@ export const llmPlanOutputSchema = z.object({
 
 export type MemberCreate = z.infer<typeof memberCreateSchema>
 export type MemberUpdate = z.infer<typeof memberUpdateSchema>
+export type AccountUpdate = z.infer<typeof accountUpdateSchema>
 export type GeneratePlanInput = z.infer<typeof generatePlanSchema>
 export type Meal = z.infer<typeof mealSchema>
 export type DayMeals = z.infer<typeof dayMealsSchema>
 export type Fork = z.infer<typeof forkSchema>
 export type ShoppingItem = z.infer<typeof shoppingItemSchema>
 export type LLMPlanOutput = z.infer<typeof llmPlanOutputSchema>
+export type MeasurementSystem = z.infer<typeof MeasurementSystemEnum>

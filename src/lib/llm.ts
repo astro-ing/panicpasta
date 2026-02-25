@@ -2,6 +2,7 @@ import OpenAI from "openai"
 import type { ConstraintResult } from "./constraints"
 import type { GeneratePlanInput, LLMPlanOutput } from "./schemas"
 import { llmPlanOutputSchema } from "./schemas"
+import type { MeasurementSystem } from "./measurement"
 
 const openai = new OpenAI({
   apiKey: process.env.LLM_API_KEY,
@@ -10,7 +11,8 @@ const openai = new OpenAI({
 export async function generateMealPlan(
   constraints: ConstraintResult,
   input: GeneratePlanInput,
-  pantryItems?: string[]
+  pantryItems?: string[],
+  measurementSystem: MeasurementSystem = "metric"
 ): Promise<LLMPlanOutput> {
   const enabledMeals = Object.entries(input.mealsEnabled)
     .filter(([, v]) => v.enabled)
@@ -27,12 +29,18 @@ export async function generateMealPlan(
     ? `\nPrioritize using these pantry items: ${pantryItems.join(", ")}`
     : ""
 
+  const measurementInstructions = measurementSystem === "imperial"
+    ? "Use imperial units for ingredient quantities and instructions (oz, lb, cups, tbsp, tsp, F)."
+    : "Use metric units for ingredient quantities and instructions (g, kg, ml, l, C)."
+
   const prompt = `You are a meal planning assistant. Generate a ${input.numDays}-day meal plan as JSON.
 
 Household: ${constraints.householdSize} people
 Base diet: ${constraints.baseDiet}
 Hard allergen excludes: ${constraints.hardExcludes.length > 0 ? constraints.hardExcludes.join(", ") : "none"}
 Meal slots per day: ${enabledMeals}
+Measurement system: ${measurementSystem}
+${measurementInstructions}
 ${forkInstructions}${pantryNote}
 
 Output ONLY valid JSON matching this structure exactly:

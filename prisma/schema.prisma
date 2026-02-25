@@ -36,6 +36,11 @@ enum PlanStatus {
   failed
 }
 
+enum MeasurementSystem {
+  metric
+  imperial
+}
+
 // ─── Auth.js (NextAuth v5) default models ───────────────────────────
 
 model User {
@@ -49,6 +54,10 @@ model User {
   stripeCustomerId    String?
   generationsToday    Int       @default(0)
   generationsResetAt  DateTime  @default(now())
+  shoppingEmailsToday Int       @default(0)
+  shoppingEmailsResetAt DateTime @default(now())
+  newsletterSubscribed Boolean   @default(false)
+  measurementSystem   MeasurementSystem?
 
   accounts      Account[]
   sessions      Session[]

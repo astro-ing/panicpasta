@@ -36,17 +36,17 @@ interface Member {
 }
 
 interface Props {
-  household: { id: string; name: string }
   members: Member[]
-  tier: string
+  maxMembers: number
 }
 
-export function HouseholdManager({ household, members: initialMembers, tier }: Props) {
+export function HouseholdManager({ members: initialMembers, maxMembers }: Props) {
   const router = useRouter()
-  const [members, setMembers] = useState(initialMembers)
+  const members = initialMembers
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [form, setForm] = useState({
     name: "",
     ageGroup: "adult",
@@ -58,8 +58,6 @@ export function HouseholdManager({ household, members: initialMembers, tier }: P
   const [allergyInput, setAllergyInput] = useState("")
   const [dislikeInput, setDislikeInput] = useState("")
   const [goalInput, setGoalInput] = useState("")
-
-  const maxMembers = tier === "PRO" ? 6 : 3
 
   const resetForm = () => {
     setForm({ name: "", ageGroup: "adult", diet: "none", allergies: [], dislikes: [], goals: [] })
@@ -93,24 +91,34 @@ export function HouseholdManager({ household, members: initialMembers, tier }: P
 
   const handleSave = async (memberId?: string) => {
     setLoading(true)
+    setError("")
     try {
-      if (memberId) {
-        await fetch(`/api/members/${memberId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        })
-      } else {
-        await fetch("/api/members", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        })
+      const response = memberId
+        ? await fetch(`/api/members/${memberId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          })
+        : await fetch("/api/members", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        const message = typeof data?.error === "string" ? data.error : "Failed to save member"
+        setError(message)
+        return
       }
-      setEditing(null)
-      setAdding(false)
-      resetForm()
+
       router.refresh()
+      if (memberId) {
+        setEditing(null)
+      } else {
+        setAdding(false)
+      }
+      resetForm()
     } finally {
       setLoading(false)
     }
@@ -119,8 +127,16 @@ export function HouseholdManager({ household, members: initialMembers, tier }: P
   const handleDelete = async (memberId: string) => {
     if (!confirm("Remove this member?")) return
     setLoading(true)
+    setError("")
     try {
-      await fetch(`/api/members/${memberId}`, { method: "DELETE" })
+      const response = await fetch(`/api/members/${memberId}`, { method: "DELETE" })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        const message = typeof data?.error === "string" ? data.error : "Failed to delete member"
+        setError(message)
+        return
+      }
+
       router.refresh()
     } finally {
       setLoading(false)
@@ -235,6 +251,12 @@ export function HouseholdManager({ household, members: initialMembers, tier }: P
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="p-4 bg-tomato-500/10 border-2 border-tomato-500 rounded-xl">
+          <p className="text-sm font-bold text-tomato-600">{error}</p>
+        </div>
+      )}
+
       {/* Member List */}
       {members.map((member) =>
         editing === member.id ? (

@@ -4,11 +4,30 @@ import { prisma } from "@/lib/prisma"
 import { generatePlanSchema } from "@/lib/schemas"
 import { buildConstraints } from "@/lib/constraints"
 import { generateMealPlan } from "@/lib/llm"
+import { guessMeasurementSystem } from "@/lib/measurement"
 
 const PLAN_DAILY_LIMIT_FREE = Number(process.env.PLAN_DAILY_LIMIT_FREE || 1)
 const PLAN_DAILY_LIMIT_PRO = Number(process.env.PLAN_DAILY_LIMIT_PRO || 3)
 const PLAN_MAX_DAYS_FREE = Number(process.env.PLAN_MAX_DAYS_FREE || 3)
 const PLAN_MAX_DAYS_PRO = Number(process.env.PLAN_MAX_DAYS_PRO || 30)
+
+function normalizeMealsForConfiguredSlots(
+  rawMeals: Record<string, unknown>,
+  mealsEnabled: Record<string, { enabled: boolean }>
+) {
+  const normalized: Record<string, unknown> = {}
+
+  for (const [slotKey, slotConfig] of Object.entries(mealsEnabled)) {
+    if (!slotConfig.enabled) {
+      normalized[slotKey] = null
+      continue
+    }
+
+    normalized[slotKey] = slotKey in rawMeals ? rawMeals[slotKey] : null
+  }
+
+  return normalized
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -18,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { tier: true, generationsToday: true, generationsResetAt: true },
+    select: { tier: true, generationsToday: true, generationsResetAt: true, measurementSystem: true },
   })
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -54,6 +73,17 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const effectiveUseItUpMode = user.tier === "PRO" ? parsed.data.useItUpMode : false
+
+  let measurementSystem = user.measurementSystem
+  if (!measurementSystem) {
+    measurementSystem = guessMeasurementSystem(parsed.data.timezone)
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { measurementSystem },
+    })
+  }
+
   const household = await prisma.household.findUnique({
     where: { userId: session.user.id },
     include: { members: { orderBy: { sortOrder: "asc" } }, pantryItems: true },
@@ -71,29 +101,34 @@ export async function POST(req: NextRequest) {
       startDate: new Date(parsed.data.startDate),
       numDays: parsed.data.numDays,
       mealsEnabled: parsed.data.mealsEnabled,
-      useItUpMode: parsed.data.useItUpMode,
+      useItUpMode: effectiveUseItUpMode,
       status: "generating",
     },
   })
 
   try {
     const constraints = buildConstraints(household.members)
-    const pantryItems = parsed.data.useItUpMode
+    const pantryItems = effectiveUseItUpMode
       ? household.pantryItems.map((p) => p.name)
       : undefined
 
-    const llmResult = await generateMealPlan(constraints, parsed.data, pantryItems)
+    const llmResult = await generateMealPlan(constraints, parsed.data, pantryItems, measurementSystem)
 
     await prisma.$transaction([
-      ...llmResult.days.map((day) =>
-        prisma.planDay.create({
+      ...llmResult.days.map((day) => {
+        const normalizedMeals = normalizeMealsForConfiguredSlots(
+          day.meals as Record<string, unknown>,
+          parsed.data.mealsEnabled
+        )
+
+        return prisma.planDay.create({
           data: {
             planId: plan.id,
             dayIndex: day.day_index,
-            meals: day.meals as object,
+            meals: normalizedMeals as object,
           },
         })
-      ),
+      }),
       prisma.plan.update({
         where: { id: plan.id },
         data: { status: "ready" },

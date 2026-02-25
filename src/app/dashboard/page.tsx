@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
 import { Users, CalendarDays, Plus, ChefHat } from "lucide-react"
+import { NewsletterOptInCard } from "@/components/dashboard/newsletter-optin-card"
+import { UpgradeProCard } from "@/components/dashboard/upgrade-pro-card"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -20,8 +22,11 @@ export default async function DashboardPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { tier: true, generationsToday: true },
+    select: { tier: true, generationsToday: true, newsletterSubscribed: true },
   })
+
+  const showUpgradeCard = user?.tier === "FREE"
+  const showNewsletterCard = !user?.newsletterSubscribed
 
   return (
     <div className="space-y-8">
@@ -118,6 +123,22 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {(showUpgradeCard || showNewsletterCard) && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {showUpgradeCard && (
+            <div className={showNewsletterCard ? "lg:col-start-2" : "lg:col-start-3"}>
+              <UpgradeProCard />
+            </div>
+          )}
+
+          {showNewsletterCard && (
+            <div className="lg:col-start-3">
+              <NewsletterOptInCard />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

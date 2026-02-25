@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Plus, X, ShoppingBasket, Lock } from "lucide-react"
 
 interface PantryItem {
@@ -19,6 +18,8 @@ export default function PantryPage() {
   const [error, setError] = useState("")
   const [newItem, setNewItem] = useState("")
   const [newCategory, setNewCategory] = useState("pantry")
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState("")
 
   useEffect(() => {
     fetch("/api/pantry")
@@ -52,6 +53,34 @@ export default function PantryPage() {
     setItems(items.filter((i) => i.id !== id))
   }
 
+  const handleStartCheckout = async () => {
+    setCheckoutLoading(true)
+    setCheckoutError("")
+
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setCheckoutError(data.error || "Unable to start checkout.")
+        return
+      }
+
+      if (!data.url) {
+        setCheckoutError("Unable to start checkout.")
+        return
+      }
+
+      window.location.assign(data.url)
+    } catch {
+      setCheckoutError("Something went wrong while starting checkout.")
+    } finally {
+      setCheckoutLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -71,9 +100,12 @@ export default function PantryPage() {
           <Lock className="w-12 h-12 text-charcoal-800/20 mx-auto mb-4" />
           <h2 className="font-serif text-2xl font-bold mb-2">Pro Feature</h2>
           <p className="text-charcoal-800 font-medium mb-6">
-            Pantry management and "Use-it-up" mode are available on the Pro plan.
+            Pantry management and Use-it-up mode are available on the Pro plan.
           </p>
-          <Button>Upgrade to Pro</Button>
+          <Button onClick={handleStartCheckout} disabled={checkoutLoading}>
+            {checkoutLoading ? "Opening checkout..." : "Upgrade to Pro"}
+          </Button>
+          {checkoutError && <p className="text-sm font-bold text-tomato-600 mt-3">{checkoutError}</p>}
         </div>
       </div>
     )
@@ -84,7 +116,7 @@ export default function PantryPage() {
       <div>
         <h1 className="font-serif text-4xl font-black mb-2">Pantry</h1>
         <p className="text-lg text-charcoal-800 font-medium">
-          Track what you have. Enable "Use-it-up" mode when generating plans.
+          Track what you have. Enable Use-it-up mode when generating plans.
         </p>
       </div>
 

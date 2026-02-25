@@ -1,8 +1,10 @@
 import Link from "next/link"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Home, Users, CalendarDays, ShoppingBasket, LogOut } from "lucide-react"
+import { Home, Users, CalendarDays, ShoppingBasket, Settings2 } from "lucide-react"
 import { SignOutButton } from "@/components/dashboard/signout-button"
+import { UpgradeProNavButton } from "@/components/dashboard/upgrade-pro-nav-button"
 
 export default async function DashboardLayout({
   children,
@@ -10,9 +12,15 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/auth/signin")
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { tier: true },
+  })
+  const showUpgradeNavButton = user?.tier === "FREE"
 
   const navItems = [
     { href: "/dashboard", label: "Overview", icon: Home },
@@ -25,8 +33,12 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-pasta-50">
       <nav className="bg-white border-b-4 border-charcoal-900 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-          <Link href="/dashboard" className="font-serif font-black text-2xl text-charcoal-900 hover:text-tomato-500 transition-colors">
-            PANIC Pasta
+          <Link
+            href="/"
+            className="group inline-flex items-center gap-1 font-serif font-black text-2xl text-charcoal-900 transition-colors"
+          >
+            <span className="tracking-tight">PANIC</span>
+            <span className="text-tomato-500 -rotate-1 transition-transform group-hover:rotate-0">Pasta!</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -42,10 +54,15 @@ export default async function DashboardLayout({
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-bold text-charcoal-800 hidden sm:block">
-              {session.user.name || session.user.email}
-            </span>
+          <div className="flex items-center gap-2">
+            {showUpgradeNavButton && <UpgradeProNavButton />}
+            <Link
+              href="/dashboard/account"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-charcoal-800 hover:bg-pasta-100 hover:text-tomato-500 transition-colors"
+            >
+              <Settings2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Account</span>
+            </Link>
             <SignOutButton />
           </div>
         </div>

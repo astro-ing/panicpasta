@@ -29,13 +29,29 @@ export async function POST(req: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session
       const email = session.customer_email || session.customer_details?.email
-      if (email) {
+      const metadataUserId = session.metadata?.userId
+      const stripeCustomerId = typeof session.customer === "string" ? session.customer : undefined
+
+      if (metadataUserId) {
+        await prisma.user.updateMany({
+          where: { id: metadataUserId },
+          data: {
+            tier: "PRO",
+            stripeCustomerId,
+          },
+        })
+      } else if (email) {
         await prisma.user.updateMany({
           where: { email },
           data: {
             tier: "PRO",
-            stripeCustomerId: session.customer as string,
+            stripeCustomerId,
           },
+        })
+      } else if (stripeCustomerId) {
+        await prisma.user.updateMany({
+          where: { stripeCustomerId },
+          data: { tier: "PRO" },
         })
       }
       break

@@ -7,6 +7,8 @@ import { HouseholdManager } from "@/components/dashboard/household-manager"
 export default async function HouseholdPage() {
   const session = await auth()
   if (!session?.user?.id) return null
+  const membersMaxFree = Number(process.env.MEMBERS_MAX_FREE || 2)
+  const membersMaxPro = Number(process.env.MEMBERS_MAX_PRO || 6)
 
   const household = await prisma.household.findUnique({
     where: { userId: session.user.id },
@@ -20,6 +22,8 @@ export default async function HouseholdPage() {
 
   if (!household) return null
 
+  const maxMembers = user?.tier === "PRO" ? membersMaxPro : membersMaxFree
+
   return (
     <div className="space-y-8">
       <div>
@@ -29,9 +33,8 @@ export default async function HouseholdPage() {
         </p>
       </div>
       <HouseholdManager
-        household={household}
         members={household.members}
-        tier={user?.tier || "FREE"}
+        maxMembers={maxMembers}
       />
     </div>
   )

@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import type { Meal } from "@/lib/schemas"
-
-interface AggregatedItem {
-  name: string
-  quantities: string[]
-  category: string
-}
+import { aggregateShoppingList } from "@/lib/shopping-list"
 
 export async function GET(
   _req: NextRequest,
@@ -35,37 +29,7 @@ export async function GET(
     return NextResponse.json({ error: "Plan not found" }, { status: 404 })
   }
 
-  const itemMap = new Map<string, AggregatedItem>()
-
-  for (const day of plan.planDays) {
-    const meals = day.meals as Record<string, Meal | null>
-    for (const meal of Object.values(meals)) {
-      if (!meal?.shopping_items) continue
-      for (const item of meal.shopping_items) {
-        const key = item.name.toLowerCase()
-        const existing = itemMap.get(key)
-        if (existing) {
-          existing.quantities.push(item.qty)
-        } else {
-          itemMap.set(key, {
-            name: item.name,
-            quantities: [item.qty],
-            category: item.category,
-          })
-        }
-      }
-    }
-  }
-
-  const grouped: Record<string, AggregatedItem[]> = {}
-  for (const item of itemMap.values()) {
-    if (!grouped[item.category]) grouped[item.category] = []
-    grouped[item.category].push(item)
-  }
-
-  for (const cat of Object.keys(grouped)) {
-    grouped[cat].sort((a, b) => a.name.localeCompare(b.name))
-  }
+  const { grouped } = aggregateShoppingList(plan.planDays)
 
   return NextResponse.json({ planId: id, categories: grouped })
 }

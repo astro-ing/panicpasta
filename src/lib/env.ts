@@ -27,7 +27,7 @@ const envSchema = z.object({
   PLAN_DAILY_LIMIT_PRO: z.coerce.number().default(3),
   PLAN_MAX_DAYS_FREE: z.coerce.number().default(3),
   PLAN_MAX_DAYS_PRO: z.coerce.number().default(30),
-  MEMBERS_MAX_FREE: z.coerce.number().default(3),
+  MEMBERS_MAX_FREE: z.coerce.number().default(2),
   MEMBERS_MAX_PRO: z.coerce.number().default(6),
 })
 

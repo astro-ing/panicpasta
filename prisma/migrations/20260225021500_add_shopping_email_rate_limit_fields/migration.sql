@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "shoppingEmailsToday" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "shoppingEmailsResetAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
